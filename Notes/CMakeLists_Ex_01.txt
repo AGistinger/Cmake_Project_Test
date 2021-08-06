@@ -1,0 +1,26 @@
+project(EBLeopardCam)
+
+add_library(${PROJECT_NAME} STATIC
+        include/EBLeopardCam.h
+        EBLeopardCam.cpp
+        DeviceEnumerator.h
+        DeviceEnumerator.cpp
+    )
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+        Qt5::Gui
+        ${OpenCV_LIBS}
+)
+
+## always call the followib line if you link with ${OpenCV_LIBS}
+eb_install_opencv_dlls(${PROJECT_NAME})
+
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+        FOLDER "filters" # folder name
+    )

@@ -1,0 +1,90 @@
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+project(Incubator_Adtf3)
+
+# HELPERS #
+include(functions.cmake)
+
+# CMAKE SETTINGS #
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+# for debugging of compile or linker commands set this to on - normal build errors will be displayed in either setting
+set(CMAKE_VERBOSE_MAKEFILE OFF FORCE)
+# compliler options #
+if(WIN32)
+if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W3" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
+endif()
+endif()
+
+set(CMAKE_CXX_STANDARD 14)
+
+# adtf #
+if(WIN32)
+    set(ADTF_DIR "${CMAKE_CURRENT_SOURCE_DIR}/base/tools/adtf")
+    set (ADTF_DEVICE_TOOLBOX_DIR "${ADTF_DIR}/addons/devicetoolbox")
+endif()
+find_package(ADTF 3.9.1 EXACT REQUIRED)
+find_package(ADTF COMPONENTS filtersdk base systemsdk)
+find_package(ADTF_DEVICE_TOOLBOX REQUIRED PATHS ${ADTF_DEVICE_TOOLBOX_DIR})
+
+# end adtf #
+
+# qt #
+set(Qt5_DIR "${CMAKE_CURRENT_SOURCE_DIR}/base/tools/Qt5.12.4/msvc2017_64/lib/cmake/Qt5")
+find_package(Qt5 5.12.4 EXACT REQUIRED
+        COMPONENTS
+            Core
+            Gui
+    )
+# end qt #
+
+set(CMAKE_INSTALL_PREFIX "${ADTF_DIR}/addons/eb-incubator_adtf3-toolbox" CACHE PATH "Binaries will be installed here." FORCE)
+
+# Opencv #
+set(OpenCV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/base/tools/opencv")
+find_package(OpenCV REQUIRED)
+#end opencv #
+
+
+# Cepton SDK #
+set(CEPTON_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/base/_libraries/cepton_sdk" CACHE PATH "Path to Cepton SDK Root")
+if (EXISTS ${CEPTON_SDK_ROOT})
+    add_library(Cepton::cepton_lib STATIC IMPORTED)
+    set_target_properties(Cepton::cepton_lib PROPERTIES
+        IMPORTED_LOCATION ${CEPTON_SDK_ROOT}/lib/win64/cepton_sdk.lib
+        INTERFACE_INCLUDE_DIRECTORIES ${CEPTON_SDK_ROOT}/include
+    )
+    
+    add_library(Cepton::cepton_lib_imp STATIC IMPORTED)
+    set_target_properties(Cepton::cepton_lib_imp PROPERTIES
+        IMPORTED_LOCATION ${CEPTON_SDK_ROOT}/bin/win64/cepton_sdk.imp.lib
+        INTERFACE_INCLUDE_DIRECTORIES ${CEPTON_SDK_ROOT}/include
+    )
+    
+    target_link_libraries(Cepton::cepton_lib INTERFACE Cepton::cepton_lib_imp)
+else()
+    message(WARNING "CEPTON_SDK_ROOT not found. CEPTON targets not defined")
+endif()
+
+# end Cepton SDK #
+
+# Peak::PCAN-Basic #
+set(PCAN_BASIC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/base/_libraries/PCAN_Basic" CACHE PATH "Path to PCAN_Basic Root")
+if (EXISTS ${PCAN_BASIC_ROOT})
+    add_library(PCAN_basic STATIC IMPORTED)
+    set_target_properties(PCAN_basic PROPERTIES
+        IMPORTED_LOCATION ${PCAN_BASIC_ROOT}/x64/VC_LIB/PCANBasic.lib
+        INTERFACE_INCLUDE_DIRECTORIES ${PCAN_BASIC_ROOT}/Include
+    )
+else()
+    message(WARNING "PCAN_BASIC_ROOT not found. Peak targets not defined")
+endif()
+# end Peak::PCAN-Basic #
+
+## self compiled libraries ##
+add_subdirectory(base/_libraries)
+
+## DIRECTORIES TO BUILD AND INSTALL ##
+add_subdirectory(src)
+add_subdirectory(test)
